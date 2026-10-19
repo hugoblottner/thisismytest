@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Iframe Dashboard (7-Site Grid)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for sleek dark UI */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    /* Smooth transitions for full-screen toggle */
+    .iframe-card {
+      transition: all 0.2s ease-in-out;
+    }
+    .iframe-card.is-fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0;
+      margin: 0;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP HEADER & NAVBAR -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-brand-500/10 text-brand-500 rounded-lg border border-brand-500/20">
+          <i class="fa-solid font-bold fa-border-all text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-wide text-white">Multi-View 7</h1>
+          <p class="text-xs text-slate-400">Simultaneous Multi-Site Dashboard</p>
+        </div>
+      </div>
+
+      <!-- Presets & Global Actions -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">Presets:</span>
+        <button onclick="loadPreset('reference')" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-book text-emerald-400"></i> Reference
+        </button>
+        <button onclick="loadPreset('tools')" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-wrench text-amber-400"></i> Dev Tools
+        </button>
+        <button onclick="loadPreset('geo')" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-earth-americas text-sky-400"></i> Geo & Maps
+        </button>
+        
+        <div class="h-5 w-px bg-slate-800 mx-1 hidden sm:block"></div>
+
+        <button onclick="reloadAllFrames()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 transition flex items-center gap-1.5" title="Refresh all 7 frames">
+          <i class="fa-solid fa-rotate text-brand-500"></i> Refresh All
+        </button>
+        <button onclick="openHostingModal()" class="px-3 py-1.5 text-xs font-medium bg-brand-600 hover:bg-brand-500 text-white rounded-md transition shadow-lg shadow-brand-600/20 flex items-center gap-1.5">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Host for Free
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 p-4 max-w-[1920px] w-full mx-auto flex flex-col gap-4">
+
+    <!-- IFRAME SECURITY NOTICE BANNER -->
+    <div id="security-banner" class="bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-slate-300 relative shadow-lg">
+      <div class="flex items-start gap-3">
+        <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg shrink-0 mt-0.5 sm:mt-0">
+          <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        </div>
+        <div class="text-xs sm:text-sm">
+          <span class="font-semibold text-amber-300">Important Iframe Security Note:</span> 
+          Many websites (like Google, YouTube, Twitter, or Facebook) enforce strictly guarded security headers (<code class="bg-slate-800 px-1 py-0.5 rounded text-amber-200">X-Frame-Options</code> or <code class="bg-slate-800 px-1 py-0.5 rounded text-amber-200">Content-Security-Policy</code>) that block embedding. If a frame appears blank or displays a refuse-to-connect error, try using embed-friendly services (e.g., Wikipedia, OpenStreetMap, Internet Archive, CodePen, Bing, or specific embed URLs).
+        </div>
+      </div>
+      <button onclick="dismissBanner()" class="text-slate-400 hover:text-white p-1 self-end sm:self-center shrink-0">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+
+    <!-- 7-IFRAME GRID LAYOUT -->
+    <!-- Grid structure: 3 columns default on large screen, 2 on medium, 1 on mobile. Card 1 spans full row on large for visual dynamic. -->
+    <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-1">
+      
+      <!-- Generated Frame Cards 1 through 7 via JavaScript -->
+
+    </div>
+
+  </main>
+
+  <!-- HOSTING GUIDE & TUTORIAL MODAL -->
+  <div id="hosting-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-rocket text-brand-500 text-lg"></i>
+          <h2 class="text-lg font-bold text-white">How to Host This Dashboard For Free</h2>
+        </div>
+        <button onclick="closeHostingModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <!-- Modal Content -->
+      <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300">
+        <div>
+          <h3 class="font-semibold text-white text-base mb-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-brand-500/20 text-brand-400 text-xs flex items-center justify-center">1</span>
+            GitHub Pages (Recommended & Easiest)
+          </h3>
+          <ol class="list-decimal list-inside space-y-1 ml-2 text-slate-400">
+            <li>Create a free account on <a href="https://github.com" target="_blank" class="text-brand-400 hover:underline">GitHub.com</a>.</li>
+            <li>Create a new repository named <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-200">my-dashboard</code>.</li>
+            <li>Upload this single file and name it strictly <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-200">index.html</code>.</li>
+            <li>Go to <strong>Settings &gt; Pages</strong> in your repository menu.</li>
+            <li>Select the <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-200">main</code> branch as the source and click <strong>Save</strong>.</li>
+            <li>Your site will be hosted online for free within 1-2 minutes!</li>
+          </ol>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-white text-base mb-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-brand-500/20 text-brand-400 text-xs flex items-center justify-center">2</span>
+            Netlify Drop (Drag & Drop - No Code Required)
+          </h3>
+          <ol class="list-decimal list-inside space-y-1 ml-2 text-slate-400">
+            <li>Save this web page as <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-200">index.html</code> on your computer.</li>
+            <li>Go to <a href="https://app.netlify.com/drop" target="_blank" class="text-brand-400 hover:underline">app.netlify.com/drop</a>.</li>
+            <li>Drag and drop the folder containing your <code class="bg-slate-800 px-1 py-0.5 rounded text-slate-200">index.html</code> file into the browser box.</li>
+            <li>Netlify instantly deploys your site with an SSL certificate and live HTTPS URL.</li>
+          </ol>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-white text-base mb-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-brand-500/20 text-brand-400 text-xs flex items-center justify-center">3</span>
+            Vercel
+          </h3>
+          <p class="text-slate-400 ml-2">
+            Sign up at <a href="https://vercel.com" target="_blank" class="text-brand-400 hover:underline">Vercel.com</a>, import your GitHub repository, and click Deploy. It offers extremely fast edge performance for free.
+          </p>
+        </div>
+
+        <div class="p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl">
+          <h4 class="font-medium text-white mb-1"><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i> Quick Code Export</h4>
+          <p class="text-xs text-slate-400 mb-3">Save the current page code directly to your local file system:</p>
+          <button onclick="downloadPageCode()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-medium transition flex items-center gap-2">
+            <i class="fa-solid fa-download"></i> Download index.html File
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3 bg-slate-900/50 border-t border-slate-800 flex justify-end">
+        <button onclick="closeHostingModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-medium transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800 py-3 px-4 text-center text-xs text-slate-500">
+    Multi-Iframe Dashboard &bull; Settings automatically save to your browser's local storage.
+  </footer>
+
+  <!-- APPLICATION LOGIC & PRESET DEFINITIONS -->
+  <script>
+    // Initial 7-Site Presets
+    const PRESETS = {
+      default: [
+        { name: "Wikipedia Main", url: "https://en.m.wikipedia.org/wiki/Main_Page" },
+        { name: "OpenStreetMap", url: "https://en.m.wikipedia.org/wiki/Main_Page" },
+        { name: "Internet Archive", url: "https://en.m.wikipedia.org/wiki/Main_Page" },
+        { name: "Bing Search", url: "https://en.m.wikipedia.org/wiki/Main_Page" },
+        { name: "W3Schools HTML", url: "https://en.m.wikipedia.org/wiki/Main_Page" },
+        { name: "CodePen Demo", url: "https://en.m.wikipedia.org/wiki/Main_Page" },
+        { name: "Wikimedia Commons", url: "https://en.m.wikipedia.org/wiki/Main_Page" }
+      ],
+      reference: [
+        { name: "Wikipedia English", url: "https://en.m.wikipedia.org" },
+        { name: "Wikibooks", url: "https://en.m.wikibooks.org" },
+        { name: "Wiktionary", url: "https://en.m.wiktionary.org" },
+        { name: "Internet Archive", url: "https://archive.org" },
+        { name: "Project Gutenberg", url: "https://www.gutenberg.org" },
+        { name: "Stanford Encyclopedia", url: "https://plato.stanford.edu" },
+        { name: "Wikimedia", url: "https://commons.m.wikimedia.org" }
+      ],
+      tools: [
+        { name: "CodePen", url: "https://codepen.io/pen/" },
+        { name: "JSFiddle", url: "https://jsfiddle.net" },
+        { name: "Regex101", url: "https://regex101.com" },
+        { name: "W3Schools", url: "https://www.w3schools.com" },
+        { name: "JSON Formatter", url: "https://jsonformatter.org" },
+        { name: "CSS Tricks", url: "https://css-tricks.com" },
+        { name: "DevDocs", url: "https://devdocs.io" }
+      ],
+      geo: [
+        { name: "OpenStreetMap", url: "https://www.openstreetmap.org/export/embed.html" },
+        { name: "Windy Weather Map", url: "https://embed.windy.com" },
+        { name: "USGS Earthquake Map", url: "https://earthquake.usgs.gov" },
+        { name: "Wikimedia Maps", url: "https://commons.m.wikimedia.org" },
+        { name: "Bing Maps", url: "https://www.bing.com/maps" },
+        { name: "TimeAndDate", url: "https://www.timeanddate.com" },
+        { name: "Flightradar24", url: "https://www.flightradar24.com" }
+      ]
+    };
+
+    const STORAGE_KEY = 'multi_iframe_dashboard_config_v1';
+    let currentConfig = [];
+
+    // Initialize Application state
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+      renderGrid();
+    });
+
+    // Load state from local storage or fallback to defaults
+    function loadSavedState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          currentConfig = JSON.parse(saved);
+          if (!Array.isArray(currentConfig) || currentConfig.length !== 7) {
+            currentConfig = [...PRESETS.default];
+          }
+        } catch (e) {
+          currentConfig = [...PRESETS.default];
+        }
+      } else {
+        currentConfig = [...PRESETS.default];
+      }
+    }
+
+    // Save current config state to Local Storage
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentConfig));
+    }
+
+    // Render the 7 frame cards in the grid
+    function renderGrid() {
+      const container = document.getElementById('grid-container');
+      container.innerHTML = '';
+
+      currentConfig.forEach((item, index) => {
+        const card = document.createElement('div');
+        // Make index 0 span 2 columns on larger screens for visual variety
+        const spanClass = (index === 0) ? 'lg:col-span-2 xl:col-span-2' : 'col-span-1';
+        card.className = `iframe-card bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-md ${spanClass} min-h-[380px]`;
+        card.id = `card-${index}`;
+
+        card.innerHTML = `
+          <!-- Card Header & Navigation Bar -->
+          <div class="bg-slate-800/80 border-b border-slate-800 p-2.5 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <span class="w-5 h-5 rounded bg-slate-700 text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">
+                ${index + 1}
+              </span>
+              <input 
+                type="text" 
+                value="${escapeHtml(item.url)}" 
+                onchange="updateUrl(${index}, this.value)"
+                placeholder="Enter URL (https://...)" 
+                class="bg-slate-950/60 border border-slate-700/80 text-xs text-slate-200 rounded px-2.5 py-1 w-full focus:outline-none focus:border-brand-500 transition font-mono truncate"
+                title="Edit URL and press Enter"
+              />
+            </div>
+            
+            <!-- Controls -->
+            <div class="flex items-center gap-1 shrink-0">
+              <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded transition" title="Open in new tab">
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+              </a>
+              <button onclick="reloadFrame(${index})" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded transition" title="Reload iframe">
+                <i class="fa-solid fa-rotate-right text-xs"></i>
+              </button>
+              <button onclick="toggleFullscreen(${index})" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded transition" title="Toggle Fullscreen">
+                <i class="fa-solid fa-expand text-xs" id="fs-icon-${index}"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Iframe Container -->
+          <div class="relative flex-1 bg-slate-950 w-full h-full min-h-[300px]">
+            <iframe 
+              id="iframe-${index}"
+              src="${escapeHtml(item.url)}" 
+              class="w-full h-full border-0 absolute inset-0 bg-white/5"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              onerror="handleFrameError(${index})"
+            ></iframe>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // Update single URL
+    function updateUrl(index, newUrl) {
+      let formattedUrl = newUrl.trim();
+      if (formattedUrl && !/^https?:\/\//i.test(formattedUrl)) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      currentConfig[index].url = formattedUrl;
+      saveState();
+      
+      const frame = document.getElementById(`iframe-${index}`);
+      if (frame) {
+        frame.src = formattedUrl;
+      }
+    }
+
+    // Reload single iframe
+    function reloadFrame(index) {
+      const frame = document.getElementById(`iframe-${index}`);
+      if (frame) {
+        const src = frame.src;
+        frame.src = '';
+        setTimeout(() => { frame.src = src; }, 100);
+      }
+    }
+
+    // Reload all 7 frames
+    function reloadAllFrames() {
+      for (let i = 0; i < 7; i++) {
+        reloadFrame(i);
+      }
+    }
+
+    // Load preset layout
+    function loadPreset(key) {
+      if (PRESETS[key]) {
+        currentConfig = JSON.parse(JSON.stringify(PRESETS[key]));
+        saveState();
+        renderGrid();
+      }
+    }
+
+    // Toggle Fullscreen view for a card
+    function toggleFullscreen(index) {
+      const card = document.getElementById(`card-${index}`);
+      const icon = document.getElementById(`fs-icon-${index}`);
+      
+      if (card) {
+        const isFS = card.classList.toggle('is-fullscreen');
+        if (isFS) {
+          icon.className = 'fa-solid fa-compress text-xs';
+          document.body.style.overflow = 'hidden';
+        } else {
+          icon.className = 'fa-solid fa-expand text-xs';
+          document.body.style.overflow = '';
+        }
+      }
+    }
+
+    // Dismiss security notice banner
+    function dismissBanner() {
+      const banner = document.getElementById('security-banner');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+
+    // Open/Close Hosting Guide Modal
+    function openHostingModal() {
+      document.getElementById('hosting-modal').classList.remove('hidden');
+    }
+
+    function closeHostingModal() {
+      document.getElementById('hosting-modal').classList.add('hidden');
+    }
+
+    // Helper: Escaping HTML input
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Download the single page code as index.html
+    function downloadPageCode() {
+      const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
